@@ -1,20 +1,57 @@
+const fs = require('fs');
 const inquirer = require('inquirer');
+const generatePage = require('./src/page-template');
 
-// const fs = require('fs');
-// const generatePage = require('./src/page-template');
-
-// // const profileDataArgs = process.argv.slice(2);
-
-// const pageHTML = generatePage(name, github);
-
-// fs.writeFile('./index.html', pageHTML, err => {
-//   if (err) throw err;
-
-//   console.log('Portfolio complete! Check out index.html to see the output!');
-// });
+// mock data
+const mockData = {
+  name: 'Angel Van de Feniks',
+  github: 'avandefeniks',
+  confirmAbout: true,
+  about:
+    'Duis consectetur nunc nunc. Morbi finibus non sapien nec pharetra. Fusce nec dignissim orci, ac interdum ipsum. Morbi mattis justo sed commodo pellentesque. Nulla eget fringilla nulla. Integer gravida magna mi, id efficitur metus tempus et.',
+  projects: [
+    {
+      name: 'Run Buddy',
+      description:
+        'Duis consectetur nunc nunc. Morbi finibus non sapien nec pharetra. Fusce nec dignissim orci, ac interdum ipsum. Morbi mattis justo sed commodo pellentesque. Nulla eget fringilla nulla. Integer gravida magna mi, id efficitur metus tempus et. Nam fringilla elit dapibus pellentesque cursus.',
+      languages: ['HTML', 'CSS'],
+      link: 'https://github.com/lernantino/run-buddy',
+      feature: true,
+      confirmAddProject: true
+    },
+    {
+      name: 'Taskinator',
+      description:
+        'Duis consectetur nunc nunc. Morbi finibus non sapien nec pharetra. Fusce nec dignissim orci, ac interdum ipsum. Morbi mattis justo sed commodo pellentesque. Nulla eget fringilla nulla. Integer gravida magna mi, id efficitur metus tempus et. Nam fringilla elit dapibus pellentesque cursus.',
+      languages: ['JavaScript', 'HTML', 'CSS'],
+      link: 'https://github.com/lernantino/taskinator',
+      feature: true,
+      confirmAddProject: true
+    },
+    {
+      name: 'Taskmaster Pro',
+      description:
+        'Duis consectetur nunc nunc. Morbi finibus non sapien nec pharetra. Fusce nec dignissim orci, ac interdum ipsum. Morbi mattis justo sed commodo pellentesque. Nulla eget fringilla nulla. Integer gravida magna mi, id efficitur metus tempus et. Nam fringilla elit dapibus pellentesque cursus.',
+      languages: ['JavaScript', 'jQuery', 'CSS', 'HTML', 'Bootstrap'],
+      link: 'https://github.com/lernantino/taskmaster-pro',
+      feature: false,
+      confirmAddProject: true
+    },
+    {
+      name: 'Robot Gladiators',
+      description:
+        'Duis consectetur nunc nunc. Morbi finibus non sapien nec pharetra. Fusce nec dignissim orci, ac interdum ipsum. Morbi mattis justo sed commodo pellentesque.',
+      languages: ['JavaScript'],
+      link: 'https://github.com/lernantino/robot-gladiators',
+      feature: false,
+      confirmAddProject: false
+    }
+  ]
+};
+// end mock data
 
 const promptUser = () => {
-return inquirer.prompt([
+  return inquirer.prompt([
     {
       type: 'input',
       name: 'name',
@@ -22,8 +59,7 @@ return inquirer.prompt([
       validate: nameInput => {
         if (nameInput) {
           return true;
-        }
-        else {
+        } else {
           console.log('Please enter your name!');
           return false;
         }
@@ -31,13 +67,12 @@ return inquirer.prompt([
     },
     {
       type: 'input',
-      name: 'GitHub username',
-      message: 'Enter your GitHub username (Required)',
+      name: 'github',
+      message: 'Enter your GitHub Username (Required)',
       validate: githubInput => {
         if (githubInput) {
           return true;
-        }
-        else {
+        } else {
           console.log('Please enter your GitHub username!');
           return false;
         }
@@ -52,108 +87,102 @@ return inquirer.prompt([
     {
       type: 'input',
       name: 'about',
-      message: 'Provide some information about yourself:', 
-      when: ({confirmAbout}) => {
-        if (confirmAbout) {
-          return true;
-        }
-        else {
-          return false;
-        }
-      }
+      message: 'Provide some information about yourself:',
+      when: ({ confirmAbout }) => confirmAbout
     }
   ]);
 };
 
 const promptProject = portfolioData => {
-  // if there's no 'projects' array property, create one
+  console.log(`
+=================
+Add a New Project
+=================
+`);
+
+  // If there's no 'projects' array property, create one
   if (!portfolioData.projects) {
     portfolioData.projects = [];
   }
-  
-  console.log(`
-  =================
-  Add a New Project
-  =================
-  `);
-  return inquirer.prompt([
-    {
-      type: 'input',
-      name: 'Project name',
-      message: 'What is the name of your project? (Required)',
-      validate: projectInput => {
-        if (projectInput) {
-          return true;
+  return inquirer
+    .prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'What is the name of your project? (Required)',
+        validate: nameInput => {
+          if (nameInput) {
+            return true;
+          } else {
+            console.log('You need to enter a project name!');
+            return false;
+          }
         }
-        else {
-          console.log('Please enter your project name!');
-          return false;
+      },
+      {
+        type: 'input',
+        name: 'description',
+        message: 'Provide a description of the project (Required)',
+        validate: descriptionInput => {
+          if (descriptionInput) {
+            return true;
+          } else {
+            console.log('You need to enter a project description!');
+            return false;
+          }
         }
+      },
+      {
+        type: 'checkbox',
+        name: 'languages',
+        message: 'What did you this project with? (Check all that apply)',
+        choices: ['JavaScript', 'HTML', 'CSS', 'ES6', 'jQuery', 'Bootstrap', 'Node']
+      },
+      {
+        type: 'input',
+        name: 'link',
+        message: 'Enter the GitHub link to your project. (Required)',
+        validate: linkInput => {
+          if (linkInput) {
+            return true;
+          } else {
+            console.log('You need to enter a project GitHub link!');
+            return false;
+          }
+        }
+      },
+      {
+        type: 'confirm',
+        name: 'feature',
+        message: 'Would you like to feature this project?',
+        default: false
+      },
+      {
+        type: 'confirm',
+        name: 'confirmAddProject',
+        message: 'Would you like to enter another project?',
+        default: false
       }
-    },
-    {
-      type: 'input',
-      name: 'Project description',
-      message: 'Provide a description of the project. (requred)',
-      validate: descriptionInput => {
-        if (descriptionInput) {
-          return true;
-        }
-        else {
-          console.log('Please enter a project description!');
-          return false;
-        }
+    ])
+    .then(projectData => {
+      portfolioData.projects.push(projectData);
+      if (projectData.confirmAddProject) {
+        return promptProject(portfolioData);
+      } else {
+        return portfolioData;
       }
-    },
-    {
-      type: 'checkbox',
-      name: 'languages',
-      message: 'What did you build this project with? (Check all that apply)',
-      choices: ['JavaSript', 'HTML', 'CSS', 'ES6', 'jQuery', 'Bootstap', 'Node']
-    },
-    {
-      type: 'input',
-      name: 'GitHub link',
-      message: 'Enter the GitHub link to your project. (requred)',
-      validate: linkInput => {
-        if (linkInput) {
-          return true;
-        }
-        else {
-          console.log('Please enter your GitHub project link!');
-          return false;
-        }
-      }
-    },
-    {
-      type: 'confirm',
-      name: 'feature',
-      message: 'Would you like to feature this project?',
-      default: false
-    },
-    {
-      type: 'confirm',
-      name: 'confirmAddProject',
-      message: 'Would you like to enter another project?',
-      default: false
-    }
-  ])
-  .then(projectData => {
-    portfolioData.projects.push(projectData);
-    if (projectData.confirmAddProject) {
-      return promptProject(portfolioData);
-    }
-    else {
-      return portfolioData;
-    }
-  });
-
+    });
 };
+
 promptUser()
-  // .then(answers => console.log(answers))
   .then(promptProject)
   .then(portfolioData => {
-    console.log(portfolioData);
+    // const pageHTML = generatePage(mockData);
+    const pageHTML = generatePage(portfolioData);
+    
+    fs.writeFile('./index.html', pageHTML, err => {
+      if (err) throw new Error(err);
+    
+      console.log('Page created! Check out index.html in this directory to see it!');
+    });
   });
-  // .then(projectAnswers => console.log(projectAnswers))
-  
